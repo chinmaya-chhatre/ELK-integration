@@ -32,7 +32,7 @@ The `ELK_installation_script.sh` is structured to execute the following steps in
 4. Install and configure Elasticsearch.
 5. Install and configure Kibana.
 6. Install and configure Logstash.
-7. (Optional) Run the sanity check script (`07_post_elk_installation_sanity_check.sh`) to verify the ELK stack's functionality.
+7. Run the sanity check script (`07_post_elk_installation_sanity_check.sh`) to verify the ELK stack's functionality.
 
 # Instructions
 Follow these steps to execute the installation:
