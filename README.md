@@ -50,6 +50,8 @@ sudo yum install -y git
 # Step 3: Clone or copy all required scripts into a directory
 git clone https://github.com/chinmaya-chhatre/ELK-integration.git
 
+# Browse into the cloned directory
+cd ELK-integration/
 # Ensure the following files are in the same directory:
 # - ELK_installation_script.sh
 # - 01_fetch_metadata.sh
