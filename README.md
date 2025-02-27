@@ -6,44 +6,56 @@
 The `ELK_installation_script.sh` is designed to automate the installation and configuration of the ELK stack (Elasticsearch, Logstash, Kibana) on an AWS EC2 instance. This script ensures that all necessary components are installed and configured step by step, providing a seamless and error-free setup.
 
 # Pre-requisites
-**Step 1: Create an IAM Role**
+## **IAM Role Setup for ELK Installation**
+To allow the EC2 instance to manage security groups and install ELK, follow these steps to **create and attach an IAM role**.
+
+---
+
+### **Step 1: Create an IAM Role**
 1. Go to the **AWS IAM Console** → **Roles**.
 2. Click **Create Role**.
 3. **Select Trusted Entity**:
    - Choose **AWS Service** → **EC2**.
 4. Click **Next**.
 
-**Step 2: Attach Required Managed Policies**
+---
+
+### **Step 2: Attach Required Managed Policies**
 Attach the following **2 AWS-managed policies** to the role:
 
-**AmazonEC2FullAccess** – Provides full EC2 control.  
-**IAMReadOnlyAccess** – Allows read-only access to IAM for verification.  
+✅ **AmazonEC2FullAccess** – Provides full EC2 control.  
+✅ **IAMReadOnlyAccess** – Allows read-only access to IAM for verification.  
 
 1. After selecting these policies, click **Next**.
 2. Name the role **`ELK-setup-role`**.
 3. Click **Create Role**.
 
-**Step 3: Add an Inline Policy for Security Group Management**
+---
+
+### **Step 3: Add an Inline Policy for Security Group Management**
 1. In the **IAM Console**, go to **Roles** → Search for **`ELK-setup-role`**.
 2. Click on the role and go to the **Permissions** tab.
 3. Click **"Add permissions" → "Create inline policy"**.
 4. Select the **JSON** tab and paste the following:
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:CreateSecurityGroup",
-                "ec2:AuthorizeSecurityGroupIngress",
-                "ec2:ModifyInstanceAttribute",
-                "ec2:DescribeSecurityGroups",
-                "ec2:DescribeVpcs"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
+
+   ```json
+   {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Effect": "Allow",
+               "Action": [
+                   "ec2:CreateSecurityGroup",
+                   "ec2:AuthorizeSecurityGroupIngress",
+                   "ec2:ModifyInstanceAttribute",
+                   "ec2:DescribeSecurityGroups",
+                   "ec2:DescribeVpcs"
+               ],
+               "Resource": "*"
+           }
+       ]
+   }
+
 5. Click **Next**, name it **`ELK-Setup-SecurityGroup-Policy`**, and click **Create Policy**.
 6. The inline policy is now attached to the role.
 
