@@ -43,7 +43,9 @@ ssh -i <your-key.pem> ec2-user@<your-ec2-public-ip>
 
 # Step 2: Update the system and install required tools
 sudo yum update -y
-sudo yum install -y curl jq git
+sudo yum install -y curl
+sudo yum install -y jq
+sudo yum install -y git
 
 # Step 3: Clone or copy all required scripts into a directory
 # Ensure the following files are in the same directory:
