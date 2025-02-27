@@ -41,7 +41,18 @@ echo "IAM Role Attached: $IAM_ROLE"
 echo "Creating a security group for ELK..."
 SECURITY_GROUP_NAME="ELK-Setup-SG"
 SECURITY_GROUP_DESCRIPTION="Security group for ELK stack setup"
-SECURITY_GROUP_ID=$(aws ec2 create-security-group --group-name "$SECURITY_GROUP_NAME" --description "$SECURITY_GROUP_DESCRIPTION" --region "$REGION" --query 'GroupId' --output text 2>/dev/null)
+
+# Check if the security group already exists
+EXISTING_SG_ID=$(aws ec2 describe-security-groups --region "$REGION" --query "SecurityGroups[?GroupName=='$SECURITY_GROUP_NAME'].GroupId" --output text)
+
+if [ -z "$EXISTING_SG_ID" ]; then
+    echo "Creating a new security group for ELK..."
+    SECURITY_GROUP_ID=$(aws ec2 create-security-group --group-name "$SECURITY_GROUP_NAME" --description "$SECURITY_GROUP_DESCRIPTION" --region "$REGION" --query 'GroupId' --output text)
+else
+    echo "Security group already exists. Using existing Security Group ID: $EXISTING_SG_ID"
+    SECURITY_GROUP_ID=$EXISTING_SG_ID
+fi
+
 
 if [ $? -ne 0 ] || [ -z "$SECURITY_GROUP_ID" ]; then
     handle_error "Failed to create security group. Ensure the IAM role has the 'ec2:CreateSecurityGroup' permission."
@@ -51,10 +62,30 @@ echo "Security Group ID: $SECURITY_GROUP_ID"
 
 # Add necessary permissions to the security group
 echo "Adding permissions to the security group..."
-aws ec2 authorize-security-group-ingress --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0 --region "$REGION" || handle_error "Allowing SSH (22)"
-aws ec2 authorize-security-group-ingress --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 9200 --cidr 0.0.0.0/0 --region "$REGION" || handle_error "Allowing Elasticsearch (9200)"
-aws ec2 authorize-security-group-ingress --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 5601 --cidr 0.0.0.0/0 --region "$REGION" || handle_error "Allowing Kibana (5601)"
-aws ec2 authorize-security-group-ingress --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 443 --cidr 0.0.0.0/0 --region "$REGION" || handle_error "Allowing HTTPS (443)"
+add_rule_if_not_exists() {
+    local group_id=$1
+    local protocol=$2
+    local port=$3
+    local cidr=$4
+    local description=$5
+
+    # Check if rule already exists
+    RULE_EXISTS=$(aws ec2 describe-security-groups --group-ids "$group_id" --query "SecurityGroups[0].IpPermissions[?FromPort==\`$port\` && IpRanges[?CidrIp=='$cidr']].FromPort" --output text --region "$REGION")
+
+    if [ -z "$RULE_EXISTS" ]; then
+        echo "Adding rule: $description..."
+        aws ec2 authorize-security-group-ingress --group-id "$group_id" --protocol "$protocol" --port "$port" --cidr "$cidr" --region "$REGION" || handle_error "Adding rule: $description"
+    else
+        echo "Rule already exists: $description, skipping..."
+    fi
+}
+
+# Add rules only if they don't already exist
+add_rule_if_not_exists "$SECURITY_GROUP_ID" "tcp" 22 "0.0.0.0/0" "Allowing SSH (22)"
+add_rule_if_not_exists "$SECURITY_GROUP_ID" "tcp" 9200 "0.0.0.0/0" "Allowing Elasticsearch (9200)"
+add_rule_if_not_exists "$SECURITY_GROUP_ID" "tcp" 5601 "0.0.0.0/0" "Allowing Kibana (5601)"
+add_rule_if_not_exists "$SECURITY_GROUP_ID" "tcp" 443 "0.0.0.0/0" "Allowing HTTPS (443)"
+
 
 
 # Assign the security group to the instance
